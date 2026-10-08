@@ -17,6 +17,8 @@ expo-env.d.ts
 *.p12
 *.key
 *.mobileprovision
+*.keystore
+credentials.json
 
 # Metro
 .metro-health-check*
@@ -31,7 +33,8 @@ yarn-error.*
 *.pem
 
 # local env files
-.env*.local
+.env*
+!.env.example
 
 # typescript
 *.tsbuildinfo
@@ -41,3 +44,9 @@ example
 # generated native folders
 /ios
 /android
+AGENTS.md
+
+# local build/release artifacts
+*.apk
+*.aab
+*.sha256

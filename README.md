@@ -1,56 +1,131 @@
-# Welcome to your Expo app 👋
+# MyAl-Client (Beta)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+An Expo / React Native Android client porting features from the legacy
+`MALClient-main` application.
 
-## Get started
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Run
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Press `a` to open the app on a connected Android emulator/device, or scan the
+development-server QR code with Expo Go. MAL sign-in uses the app's embedded
+OAuth authorization page: sign in to MAL, approve the app if prompted, then
+the returned authorization code is exchanged for saved access/refresh tokens
+and the signed-in profile.
 
-### Other setup steps
+OAuth access/refresh tokens and the MAL website session cookies are stored with
+Expo SecureStore (Android Keystore-backed encrypted storage / iOS Keychain).
+Existing credentials are migrated from AsyncStorage on first launch after this
+update. The MAL OAuth client ID in the source is public application
+configuration, not a private client secret. Do not put user tokens, signing
+keys, or Expo access tokens in source control or a bundled `.env` file.
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+## Current port
 
-## Learn more
+The app currently includes MAL sign-in, anime and manga lists with list
+updates, search, anime/manga details, character and person details, a user
+profile with favorites and friends, MAL articles and news with an in-app
+reader, recent anime/manga community recommendations, the weekly calendar, and
+persisted appearance/list/calendar preferences. The profile includes general
+information, anime/manga statistics, recent updates, favorites, and friends.
+Community features include native forum boards, recent topics, thread reading,
+topic creation, and replies; searchable club listings and native club detail
+pages with membership and comment actions; and grouped public profile history
+with links to anime/manga details.
+Promotional videos have an in-app catalog with links to YouTube and anime
+details. Settings and the signed-in user's profile are available from the
+navigation drawer.
 
-To learn more about developing your project with Expo, look at the following resources:
+The port is not yet at full legacy parity. Forum pagination and
+moderation/editing tools are not ported. The Friends Feed, Adapted to Anime,
+image feed, list comparison, and wallpapers are not currently included.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Signed beta APK releases
 
-## Join the community
+The app version is `0.7.0-beta.1` and the Android application ID is
+`com.codescorpio.myalclinet`. Keep the application ID and signing key stable
+for all future updates so Android accepts new APKs as updates to existing
+installations.
 
-Join our community of developers creating universal apps.
+APK releases are built on EAS and published to GitHub when a matching version
+tag is pushed. One-time setup:
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+1. Create/sign in to your Expo account, then run `npx eas-cli login` and
+   `npx eas-cli init` from this project. Commit the generated EAS project ID.
+2. Run `npx eas-cli build --platform android --profile release` once
+   interactively and have EAS create and retain the Android signing keystore.
+   Keep that credential in your Expo account; never download it into the repo
+   or commit it.
+3. Create an Expo access token and add it to the GitHub repository as an
+   Actions secret named `EXPO_TOKEN`.
+4. Update `package.json` and `app.json` versions together and increment
+   `android.versionCode` in `app.json`. Commit and push, then push a matching
+   tag, for example:
+
+   ```bash
+   git tag v0.7.0-beta.1
+   git push origin v0.7.0-beta.1
+   ```
+
+GitHub Actions builds a signed APK with the EAS-managed key and attaches it,
+along with a SHA-256 checksum and signing-certificate fingerprint, to a GitHub
+Release. The release tag must match the `package.json` version. Users can
+verify file integrity with
+`sha256sum -c MyAl-Client-v0.7.0-beta.1.apk.sha256` and compare the published
+certificate fingerprint across releases. Android also rejects an update that
+is signed by a different certificate. Preserve the same EAS keystore for every
+update; a different certificate will not update an already-installed copy.
+
+Local `.env*` files, signing materials, and generated APKs are ignored by Git.
+Runtime user credentials belong in SecureStore, not environment files.
+
+## Checks
+
+```bash
+npm run lint
+npm run typecheck
+npm run check
+```
+
+## First Android test
+
+Start Expo and open the app on an Android emulator/device:
+
+```bash
+npm run android
+```
+
+If Android SDK tools are installed, this task opens the connected emulator.
+Without `adb`, it starts the Expo dev server and prints a QR code; install Expo
+Go on an Android phone and scan that QR code to test without Android Studio.
+
+To enable emulator auto-launch on Linux, install Android Studio and install the
+Android SDK plus Platform-Tools from Android Studio's SDK Manager. Then add the
+SDK path to your Fish shell configuration and restart the terminal:
+
+```fish
+set -Ux ANDROID_HOME "$HOME/Android/Sdk"
+set -Ux ANDROID_SDK_ROOT "$ANDROID_HOME"
+fish_add_path "$ANDROID_HOME/platform-tools" "$ANDROID_HOME/emulator" "$ANDROID_HOME/cmdline-tools/latest/bin"
+```
+
+Check the setup with `adb version` and `adb devices`, then run `npm run android`
+again. If the SDK is installed in a different location, set `ANDROID_HOME` to
+that path instead.
+
+Smoke-test sign-in (including MAL's app-access approval) and sign-out, confirm
+the signed-in username/profile appears, then test the anime and manga lists,
+details navigation, search, list updates, profile tabs, calendar preferences,
+drawer destinations, refresh, and offline/error states. Account-only pages and
+personalized recommendations require a MAL account. Test club membership and
+comment actions plus forum topic creation and replies while signed in. Messages
+and notifications are native screens that require a signed-in MAL account.
+
+For a release-mode JavaScript bundle check:
+
+```bash
+npx expo export --platform android
+```
