@@ -1,9 +1,14 @@
 name: Android APK release
 
 on:
-  push:
-    tags:
-      - "v*"
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Published release tag to attach the APK to
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -12,6 +17,8 @@ jobs:
   build-and-release:
     name: Build and publish signed APK
     runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
     steps:
       - name: Check out source
         uses: actions/checkout@v4
@@ -36,8 +43,8 @@ jobs:
       - name: Verify release tag matches app version
         run: |
           expected="v$(node -p 'require("./package.json").version')"
-          if [ "$GITHUB_REF_NAME" != "$expected" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME does not match package version $expected"
+          if [ "$RELEASE_TAG" != "$expected" ]; then
+            echo "::error::Release tag $RELEASE_TAG does not match package version $expected"
             exit 1
           fi
 
@@ -72,11 +79,11 @@ jobs:
           cd android
           ./gradlew --no-daemon :app:assembleRelease
 
-      - name: Verify APK signature and create checksums
+      - name: Verify APK signature
         run: |
           apk="android/app/build/outputs/apk/release/app-release.apk"
           test -s "$apk"
-          output="MyAl-Client-${GITHUB_REF_NAME}.apk"
+          output="MyAl-Client-${RELEASE_TAG}.apk"
           cp "$apk" "$output"
           apksigner_path="$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -name apksigner -print -quit)"
           if [ -z "$apksigner_path" ]; then
@@ -84,20 +91,10 @@ jobs:
             exit 1
           fi
           "$apksigner_path" verify --verbose "$output"
-          sha256sum "$output" > "$output.sha256"
-          certificate="$("$apksigner_path" verify --print-certs "$output")"
-          fingerprint="$(printf '%s\n' "$certificate" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1)"
-          if [ -z "$fingerprint" ]; then
-            echo "::error::Could not read APK signing certificate fingerprint."
-            exit 1
-          fi
-          printf 'Android signing certificate SHA-256: %s\n' "$fingerprint" > "MyAl-Client-${GITHUB_REF_NAME}.signing-certificate.txt"
 
       - name: Publish APK on GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.RELEASE_TAG }}
           generate_release_notes: true
-          files: |
-            MyAl-Client-${{ github.ref_name }}.apk
-            MyAl-Client-${{ github.ref_name }}.apk.sha256
-            MyAl-Client-${{ github.ref_name }}.signing-certificate.txt
+          files: MyAl-Client-${{ env.RELEASE_TAG }}.apk
