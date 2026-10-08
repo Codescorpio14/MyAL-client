@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build-and-release:
-    name: Build signed beta APK
+    name: Build and publish signed APK
     runs-on: ubuntu-latest
     steps:
       - name: Check out source
@@ -21,11 +21,17 @@ jobs:
         with:
           node-version: 22
 
-      - name: Set up Android signing verification tools
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install EAS CLI
-        run: npm install --global eas-cli
+      - name: Install dependencies
+        run: npm ci
 
       - name: Verify release tag matches app version
         run: |
@@ -35,28 +41,51 @@ jobs:
             exit 1
           fi
 
-      - name: Build signed APK with EAS
+      - name: Verify Android signing secrets are configured
         env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          if [ -z "$EXPO_TOKEN" ]; then
-            echo "::error::Add an EXPO_TOKEN Actions secret before publishing a release."
+          test -n "$ANDROID_KEYSTORE_BASE64" || { echo "::error::Set ANDROID_KEYSTORE_BASE64 in repository Actions secrets."; exit 1; }
+          test -n "$ANDROID_KEYSTORE_PASSWORD" || { echo "::error::Set ANDROID_KEYSTORE_PASSWORD in repository Actions secrets."; exit 1; }
+          test -n "$ANDROID_KEY_ALIAS" || { echo "::error::Set ANDROID_KEY_ALIAS in repository Actions secrets."; exit 1; }
+          test -n "$ANDROID_KEY_PASSWORD" || { echo "::error::Set ANDROID_KEY_PASSWORD in repository Actions secrets."; exit 1; }
+
+      - name: Generate Android project
+        run: npx expo prebuild --platform android --no-install
+
+      - name: Build signed release APK
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ORG_GRADLE_PROJECT_MYAL_RELEASE_STORE_FILE: app/release-key.jks
+          ORG_GRADLE_PROJECT_MYAL_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ORG_GRADLE_PROJECT_MYAL_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ORG_GRADLE_PROJECT_MYAL_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/release-key.jks
+          chmod 600 android/app/release-key.jks
+          cd android
+          ./gradlew --no-daemon :app:assembleRelease
+
+      - name: Verify APK signature and create checksums
+        run: |
+          apk="android/app/build/outputs/apk/release/app-release.apk"
+          test -s "$apk"
+          output="MyAl-Client-${GITHUB_REF_NAME}.apk"
+          cp "$apk" "$output"
+          apksigner_path="$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -name apksigner -print -quit)"
+          if [ -z "$apksigner_path" ]; then
+            echo "::error::Android build tools did not provide apksigner."
             exit 1
           fi
-          sdkmanager "build-tools;35.0.0"
-          eas build --platform android --profile release --non-interactive --wait --json > eas-build.json
-          build_url="$(node -e '
-            const fs = require("node:fs");
-            const result = JSON.parse(fs.readFileSync("eas-build.json", "utf8"));
-            const build = Array.isArray(result) ? result.at(-1) : result;
-            const url = build?.artifacts?.buildUrl;
-            if (typeof url !== "string" || !url) process.exit(1);
-            process.stdout.write(url);
-          ')"
-          curl --fail --location "$build_url" --output "MyAl-Client-${GITHUB_REF_NAME}.apk"
-          test -s "MyAl-Client-${GITHUB_REF_NAME}.apk"
-          sha256sum "MyAl-Client-${GITHUB_REF_NAME}.apk" > "MyAl-Client-${GITHUB_REF_NAME}.apk.sha256"
-          certificate="$("$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs "MyAl-Client-${GITHUB_REF_NAME}.apk")"
+          "$apksigner_path" verify --verbose "$output"
+          sha256sum "$output" > "$output.sha256"
+          certificate="$("$apksigner_path" verify --print-certs "$output")"
           fingerprint="$(printf '%s\n' "$certificate" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n 1)"
           if [ -z "$fingerprint" ]; then
             echo "::error::Could not read APK signing certificate fingerprint."

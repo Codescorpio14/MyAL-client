@@ -44,7 +44,7 @@ example
 # generated native folders
 /ios
 /android
-AGENTS.md
+AGENTS.md*
 
 # local build/release artifacts
 *.apk

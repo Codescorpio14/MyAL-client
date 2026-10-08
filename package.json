@@ -2,6 +2,7 @@
   "name": "myal-client",
   "main": "expo-router/entry",
   "version": "0.7.0-beta.1",
+  "license": "GPL-3.0-only",
   "dependencies": {
     "@expo/ui": "~57.0.22",
     "@react-native-async-storage/async-storage": "2.2.0",
@@ -49,5 +50,5 @@
     "typecheck": "tsc --noEmit",
     "check": "npm run lint && npm run typecheck"
   },
-  "private": true
+  "private": false
 }
