@@ -1,14 +1,17 @@
-import { DefaultTheme, ThemeProvider as NavThemeProvider } from 'expo-router/react-navigation';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
-import { useEffect, useMemo, useState } from 'react';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import {
+  DefaultTheme,
+  ThemeProvider as NavThemeProvider,
+} from "expo-router/react-navigation";
+import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
+import { useEffect, useMemo, useState } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
-import { hydrateAuth } from '@/api/auth';
-import { hydrateSettings } from '@/store/settings';
-import { ThemeProvider, useTheme } from '@/theme/theme-context';
+import { hydrateAuth } from "@/api/auth";
+import { hydrateSettings } from "@/store/settings";
+import { ThemeProvider, useTheme } from "@/theme/theme-context";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -19,7 +22,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 function useNavigationTheme() {
   const theme = useTheme();
   return useMemo(() => {
-    const base = theme.mode === 'dark';
+    const base = theme.mode === "dark";
     return {
       ...DefaultTheme,
       dark: base,
@@ -41,10 +44,13 @@ function RootNavigator() {
 
   return (
     <NavThemeProvider value={navTheme}>
-      <StatusBar style={theme.mode === 'dark' ? 'light' : 'dark'} />
-      <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
+      <StatusBar style={theme.mode === "dark" ? "light" : "dark"} />
+      <Stack screenOptions={{ headerShown: false, animation: "fade" }}>
         <Stack.Screen name="(main)" />
-        <Stack.Screen name="login" options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen
+          name="login"
+          options={{ animation: "slide_from_bottom" }}
+        />
       </Stack>
     </NavThemeProvider>
   );
@@ -56,7 +62,7 @@ export default function RootLayout() {
   useEffect(() => {
     Promise.all([hydrateSettings(), hydrateAuth()])
       .catch((error: unknown) => {
-        console.error('Unable to restore app data securely.', error);
+        console.error("Unable to restore app data securely.", error);
       })
       .finally(() => {
         setReady(true);

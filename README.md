@@ -83,15 +83,6 @@ Please keep pull requests focused, avoid including credentials or signing keys,
 and report bugs through the repository's
 [Issues](https://github.com/Codescorpio14/MyAL-client/issues).
 
-### Compilation and Android releases
-
-The project can be run locally with Expo Go using `npx expo start`; a local
-Android SDK is not required for that workflow.
-
-Signed beta APKs are published to GitHub Releases by
-`.github/workflows/android-apk-release.yml` when a version tag such as
-`v0.7.0-beta.1` is pushed.
-
 ### License
 
 This project is released under the

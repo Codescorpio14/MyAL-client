@@ -44,8 +44,6 @@
   "scripts": {
     "start": "expo start",
     "android": "node scripts/start-android.js",
-    "ios": "expo start --ios",
-    "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "check": "npm run lint && npm run typecheck"
