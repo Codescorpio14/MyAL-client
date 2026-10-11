@@ -1,7 +1,7 @@
 <h1 align="center">MyAl-Client</h1>
 
 <p align="center">
-  <img src="images/app-logo.png" width="150px">
+  <img src="assets/app-logo.png" width="150px">
   <br><br>
   Robust MyAnimeList client application interfacing with the official MAL API, available on Android.
 </p>
