@@ -46,14 +46,14 @@ interface AccountResponse {
 }
 
 const KEY = {
-  accessToken: 'auth:accessToken',
-  refreshToken: 'auth:refreshToken',
-  expiresAt: 'auth:expiresAt',
-  username: 'auth:username',
-  userId: 'auth:userId',
-  authenticated: 'auth:authenticated',
-  cookies: 'auth:cookies',
-  picture: 'auth:picture',
+  accessToken: "auth_accessToken",
+  refreshToken: "auth_refreshToken",
+  expiresAt: "auth_expiresAt",
+  cookies: "auth_cookies",
+  authenticated: "auth_authenticated",
+  picture: "auth_picture",
+  userId: "auth_userId",
+  username: "auth_username",
 };
 
 const SECURE_KEYS = [
